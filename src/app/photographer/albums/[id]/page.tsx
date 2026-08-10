@@ -6,6 +6,7 @@ interface Props {
     };
 }
 
+
 export default async function Page({ params }: Props) {
     return <AlbumDetailPage params={Promise.resolve(params)} />;
 }

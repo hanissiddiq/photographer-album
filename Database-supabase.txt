@@ -414,3 +414,36 @@ using (
         and albums.client_id = auth.uid()
     )
 );
+
+-- =======================================================
+-- Link Album Public Access
+-- =======================================================
+
+create table public.album_access_tokens (
+    id uuid primary key default gen_random_uuid(),
+
+    album_id uuid not null
+        references public.albums(id)
+        on delete cascade,
+
+    token_hash text not null unique,
+
+    expires_at timestamptz,
+
+    is_active boolean not null default true,
+
+    last_accessed_at timestamptz,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now()
+);
+
+create index album_access_tokens_album_id_idx
+on public.album_access_tokens(album_id);
+
+create index album_access_tokens_token_hash_idx
+on public.album_access_tokens(token_hash);
+
+alter table public.album_access_tokens
+enable row level security;

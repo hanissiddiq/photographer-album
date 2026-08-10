@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import AlbumStatusBadge from "@/components/photographer/AlbumStatusBadge";
+import GeneratePublicLinkButton
+    from "@/components/photographer/GeneratePublicLinkButton";
 
 import SyncDriveButton
     from "@/components/photographer/SyncDriveButton";
@@ -224,6 +226,23 @@ export default async function AlbumDetailPage({
                             </Link>
 
                         </div>
+
+                    </section>
+
+                    <section className="rounded-xl border bg-white p-6">
+
+                        <h2 className="mb-2 text-lg font-semibold">
+                            Public Album
+                        </h2>
+
+                        <p className="mb-5 text-sm text-gray-500">
+                            Buat link yang dapat dibagikan
+                            kepada client untuk melihat album.
+                        </p>
+
+                        <GeneratePublicLinkButton
+                            albumId={album.id}
+                        />
 
                     </section>
 
