@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPublicAlbumByToken } from "@/lib/security/public-album";
+import PhotoSelectionGallery
+    from "@/components/public/PhotoSelectionGallery";
 
 interface Props {
     params: Promise<{
@@ -71,6 +73,9 @@ export default async function PublicAlbumPage({
 
                 {/* HEADER */}
                 <header>
+                    <p className="text-sm font-medium text-gray-500">
+                        Photo Selection
+                    </p>
                     <h1 className="text-3xl font-bold text-gray-900">
                         {album.title}
                     </h1>
@@ -114,37 +119,28 @@ export default async function PublicAlbumPage({
                 {/* GALLERY */}
                 <section className="mt-8">
 
-                    {publicPhotos.length === 0 ? (
-                        <div className="rounded-xl border bg-white p-10 text-center">
-                            <p className="text-gray-500">
-                                Belum ada foto dalam album.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-5">
+                     {/* Gallery */}
 
-                            {publicPhotos.map(
-                                (photo) => (
-                                    <div
-                                        key={photo.id}
-                                        className="overflow-hidden rounded-xl border bg-white"
-                                    >
-                                        <img
-                                            src={
-                                                photo.image_url
-                                            }
-                                            alt={
-                                                photo.file_name
-                                            }
-                                            loading="lazy"
-                                            className="aspect-square w-full object-cover"
-                                        />
-                                    </div>
-                                )
-                            )}
-
-                        </div>
-                    )}
+                {publicPhotos.length ===
+                0 ? (
+                    <div className="rounded-xl border bg-white p-12 text-center">
+                        <p className="text-gray-500">
+                            Belum ada foto dalam album.
+                        </p>
+                    </div>
+                ) : (
+                    <PhotoSelectionGallery
+                        token={token}
+                        photos={
+                            publicPhotos
+                        }
+                        quota={
+                            album.quota
+                        }
+                    />
+                )}
+                        
+                    
 
                 </section>
 

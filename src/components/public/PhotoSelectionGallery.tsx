@@ -1,0 +1,377 @@
+"use client";
+
+import {
+    useEffect,
+    useState,
+} from "react";
+
+import PhotoLightbox from "./PhotoLightbox";
+
+interface Photo {
+    id: string;
+    file_name: string;
+    image_url: string;
+    mime_type: string | null;
+    file_size: number | null;
+    sort_order: number;
+}
+
+interface Props {
+    token: string;
+
+    photos: Photo[];
+
+    quota: number;
+}
+
+export default function PhotoSelectionGallery({
+    token,
+    photos,
+    quota,
+}: Props) {
+    const [
+        selectedIds,
+        setSelectedIds,
+    ] = useState<Set<string>>(
+        new Set()
+    );
+
+    const [
+        lightboxIndex,
+        setLightboxIndex,
+    ] = useState<number | null>(
+        null
+    );
+
+    const [
+        saving,
+        setSaving,
+    ] = useState(false);
+
+    const [
+        saved,
+        setSaved,
+    ] = useState(true);
+
+    const [
+        error,
+        setError,
+    ] = useState("");
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load existing selection
+    |--------------------------------------------------------------------------
+    */
+
+    useEffect(() => {
+        async function loadSelection() {
+            try {
+                const response =
+                    await fetch(
+                        `/api/public/albums/${token}/selection`,
+                        {
+                            cache: "no-store",
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.error
+                    );
+                }
+
+                setSelectedIds(
+                    new Set(
+                        data.selection
+                            .photo_ids
+                    )
+                );
+
+            } catch (error) {
+                setError(
+                    error instanceof Error
+                        ? error.message
+                        : "Gagal mengambil pilihan."
+                );
+            }
+        }
+
+        loadSelection();
+    }, [token]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Toggle photo
+    |--------------------------------------------------------------------------
+    */
+
+    function togglePhoto(
+        photoId: string
+    ) {
+        setSelectedIds(
+            (previous) => {
+                const next =
+                    new Set(
+                        previous
+                    );
+
+                if (
+                    next.has(
+                        photoId
+                    )
+                ) {
+                    next.delete(
+                        photoId
+                    );
+                } else {
+                    if (
+                        next.size >=
+                        quota
+                    ) {
+                        return previous;
+                    }
+
+                    next.add(
+                        photoId
+                    );
+                }
+
+                return next;
+            }
+        );
+
+        setSaved(false);
+        setError("");
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save selection
+    |--------------------------------------------------------------------------
+    */
+
+    async function saveSelection() {
+        setSaving(true);
+        setError("");
+
+        try {
+            const response =
+                await fetch(
+                    `/api/public/albums/${token}/selection`,
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify(
+                            {
+                                photoIds:
+                                    Array.from(
+                                        selectedIds
+                                    ),
+                            }
+                        ),
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error ??
+                        "Gagal menyimpan pilihan."
+                );
+            }
+
+            setSelectedIds(
+                new Set(
+                    data.selection
+                        .photo_ids
+                )
+            );
+
+            setSaved(true);
+
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Gagal menyimpan pilihan."
+            );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <div>
+
+            {/* Selection header */}
+
+            <div className="sticky top-0 z-30 mb-6 rounded-xl border bg-white/95 p-4 shadow-sm backdrop-blur">
+
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+                    <div>
+
+                        <p className="text-sm text-gray-500">
+                            Foto yang dipilih
+                        </p>
+
+                        <p className="text-xl font-bold">
+
+                            {selectedIds.size}
+
+                            <span className="font-normal text-gray-400">
+                                {" / "}
+                                {quota}
+                            </span>
+
+                        </p>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={
+                            saveSelection
+                        }
+                        disabled={
+                            saving ||
+                            saved
+                        }
+                        className="rounded-lg bg-black px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {saving
+                            ? "Menyimpan..."
+                            : saved
+                            ? "Tersimpan"
+                            : "Simpan Pilihan"}
+                    </button>
+
+                </div>
+
+                {selectedIds.size >=
+                    quota && (
+                    <p className="mt-3 text-sm font-medium text-green-600">
+                        Kuota pilihan sudah
+                        terpenuhi.
+                    </p>
+                )}
+
+                {error && (
+                    <p className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                        {error}
+                    </p>
+                )}
+
+            </div>
+
+            {/* Gallery */}
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+
+                {photos.map(
+                    (
+                        photo,
+                        index
+                    ) => {
+                        const selected =
+                            selectedIds.has(
+                                photo.id
+                            );
+
+                        return (
+                            <button
+                                key={
+                                    photo.id
+                                }
+                                type="button"
+                                onClick={() =>
+                                    setLightboxIndex(
+                                        index
+                                    )
+                                }
+                                className="group relative aspect-square overflow-hidden rounded-xl bg-gray-100"
+                            >
+
+                                <img
+                                    src={
+                                        photo.image_url
+                                    }
+                                    alt={
+                                        photo.file_name
+                                    }
+                                    loading="lazy"
+                                    className={`h-full w-full object-cover transition duration-300 group-hover:scale-105 ${
+                                        selected
+                                            ? "brightness-75"
+                                            : ""
+                                    }`}
+                                />
+
+                                {/* Selection indicator */}
+
+                                <span
+                                    className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold ${
+                                        selected
+                                            ? "border-white bg-black text-white"
+                                            : "border-white/80 bg-black/20 text-transparent"
+                                    }`}
+                                >
+                                    ✓
+                                </span>
+
+                                {/* File name */}
+
+                                <span className="absolute bottom-0 left-0 right-0 truncate bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-8 text-left text-xs text-white">
+                                    {
+                                        photo.file_name
+                                    }
+                                </span>
+
+                            </button>
+                        );
+                    }
+                )}
+
+            </div>
+
+            {/* Lightbox */}
+
+            {lightboxIndex !==
+                null && (
+                <PhotoLightbox
+                    photos={photos}
+                    activeIndex={
+                        lightboxIndex
+                    }
+                    selectedIds={
+                        selectedIds
+                    }
+                    quota={quota}
+                    onClose={() =>
+                        setLightboxIndex(
+                            null
+                        )
+                    }
+                    onChange={
+                        setLightboxIndex
+                    }
+                    onToggle={
+                        togglePhoto
+                    }
+                />
+            )}
+
+        </div>
+    );
+}
