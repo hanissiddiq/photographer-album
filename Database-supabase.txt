@@ -1,0 +1,298 @@
+-- =========================================================
+-- PHOTOGRAPHER ALBUM SYSTEM
+-- PHASE 1 - FOUNDATION
+-- =========================================================
+
+-- =========================================================
+-- 1. ENUM ROLE
+-- =========================================================
+
+create type public.user_role as enum (
+    'photographer',
+    'client'
+);
+
+
+-- =========================================================
+-- 2. PROFILES TABLE
+-- =========================================================
+
+create table public.profiles (
+    id uuid primary key references auth.users(id) on delete cascade,
+
+    full_name text,
+
+    email text,
+
+    phone text,
+
+    role public.user_role not null default 'client',
+
+    avatar_url text,
+
+    is_active boolean not null default true,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now()
+);
+
+
+-- =========================================================
+-- 3. INDEX
+-- =========================================================
+
+create index profiles_role_idx
+    on public.profiles(role);
+
+create index profiles_email_idx
+    on public.profiles(email);
+
+
+-- =========================================================
+-- 4. UPDATED_AT FUNCTION
+-- =========================================================
+
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$;
+
+
+-- =========================================================
+-- 5. UPDATED_AT TRIGGER
+-- =========================================================
+
+create trigger profiles_updated_at
+before update on public.profiles
+for each row
+execute function public.handle_updated_at();
+
+
+-- =========================================================
+-- 6. CREATE PROFILE AFTER REGISTER
+-- =========================================================
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+
+    insert into public.profiles (
+        id,
+        full_name,
+        email,
+        phone,
+        role
+    )
+    values (
+        new.id,
+        coalesce(
+            new.raw_user_meta_data ->> 'full_name',
+            ''
+        ),
+        new.email,
+        coalesce(
+            new.raw_user_meta_data ->> 'phone',
+            ''
+        ),
+
+        'client'::public.user_role
+    );
+
+    return new;
+
+end;
+$$;
+
+
+-- =========================================================
+-- 7. AUTH USER TRIGGER
+-- =========================================================
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
+
+
+-- =========================================================
+-- 8. ENABLE RLS
+-- =========================================================
+
+alter table public.profiles enable row level security;
+
+
+-- =========================================================
+-- 9. SELECT POLICY
+-- =========================================================
+
+create policy "Users can view own profile"
+on public.profiles
+for select
+to authenticated
+using (
+    auth.uid() = id
+);
+
+
+-- =========================================================
+-- 10. UPDATE POLICY
+-- =========================================================
+
+create policy "Users can update own profile"
+on public.profiles
+for update
+to authenticated
+using (
+    auth.uid() = id
+)
+with check (
+    auth.uid() = id
+);
+
+
+-- =========================================================
+-- 11. INSERT POLICY
+-- =========================================================
+
+create policy "Users can insert own profile"
+on public.profiles
+for insert
+to authenticated
+with check (
+    auth.uid() = id
+);
+
+
+-- =========================================================
+-- FASE 2
+-- =========================================================
+
+-- =========================================================
+-- PHASE 2
+-- ALBUMS
+-- =========================================================
+
+create type public.album_status as enum (
+    'selection',
+    'editing',
+    'printing',
+    'done'
+);
+
+
+create table public.albums (
+    id uuid primary key default gen_random_uuid(),
+
+    photographer_id uuid not null
+        references public.profiles(id)
+        on delete cascade,
+
+    client_id uuid
+        references public.profiles(id)
+        on delete set null,
+
+    title text not null,
+
+    slug text not null unique,
+
+    description text,
+
+    drive_url text,
+
+    quota integer not null default 40,
+
+    whatsapp_number text,
+
+    status public.album_status not null default 'selection',
+
+    is_active boolean not null default true,
+
+    expires_at timestamptz,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    constraint albums_quota_positive
+        check (quota > 0)
+);
+
+create index albums_photographer_id_idx
+on public.albums(photographer_id);
+
+create index albums_client_id_idx
+on public.albums(client_id);
+
+create index albums_status_idx
+on public.albums(status);
+
+create index albums_slug_idx
+on public.albums(slug);
+
+create index albums_is_active_idx
+on public.albums(is_active);
+
+create trigger albums_updated_at
+before update on public.albums
+for each row
+execute function public.handle_updated_at();
+
+-- ==============================================
+-- CREATE POLICY
+-- ==============================================
+alter table public.albums enable row level security;
+
+create policy "Photographer can view own albums"
+on public.albums
+for select
+to authenticated
+using (
+    photographer_id = auth.uid()
+);
+
+create policy "Photographer can create own albums"
+on public.albums
+for insert
+to authenticated
+with check (
+    photographer_id = auth.uid()
+);
+
+create policy "Photographer can update own albums"
+on public.albums
+for update
+to authenticated
+using (
+    photographer_id = auth.uid()
+)
+with check (
+    photographer_id = auth.uid()
+);
+
+create policy "Photographer can delete own albums"
+on public.albums
+for delete
+to authenticated
+using (
+    photographer_id = auth.uid()
+);
+
+create policy "Client can view assigned albums"
+on public.albums
+for select
+to authenticated
+using (
+    client_id = auth.uid()
+);
