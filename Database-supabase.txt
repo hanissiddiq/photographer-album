@@ -296,3 +296,121 @@ to authenticated
 using (
     client_id = auth.uid()
 );
+
+
+-- =========================================================
+-- PHASE 3
+-- Google drive integration
+-- =========================================================
+create table public.google_drive_connections (
+    id uuid primary key default gen_random_uuid(),
+
+    photographer_id uuid not null
+        references public.profiles(id)
+        on delete cascade,
+
+    google_email text,
+
+    refresh_token_encrypted text not null,
+
+    scope text,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    unique(photographer_id)
+);
+
+alter table public.google_drive_connections
+enable row level security;
+
+alter table public.albums
+add column drive_folder_id text;
+
+alter table public.albums
+add column drive_folder_name text;
+
+alter table public.albums
+add column photos_synced_at timestamptz;
+
+create table public.album_photos (
+    id uuid primary key default gen_random_uuid(),
+
+    album_id uuid not null
+        references public.albums(id)
+        on delete cascade,
+
+    drive_file_id text not null,
+
+    file_name text not null,
+
+    mime_type text,
+
+    file_size bigint,
+
+    drive_modified_time timestamptz,
+
+    thumbnail_url text,
+
+    web_view_link text,
+
+    sort_order integer not null default 0,
+
+    created_at timestamptz not null default now(),
+
+    updated_at timestamptz not null default now(),
+
+    unique(album_id, drive_file_id)
+);
+
+create index album_photos_album_id_idx
+on public.album_photos(album_id);
+
+create index album_photos_drive_file_id_idx
+on public.album_photos(drive_file_id);
+
+create index album_photos_sort_order_idx
+on public.album_photos(album_id, sort_order);
+
+alter table public.album_photos
+enable row level security;
+
+create policy "Photographer can view own album photos"
+on public.album_photos
+for select
+to authenticated
+using (
+    exists (
+        select 1
+        from public.albums
+        where albums.id = album_photos.album_id
+        and albums.photographer_id = auth.uid()
+    )
+);
+
+create policy "Photographer can delete own album photos"
+on public.album_photos
+for delete
+to authenticated
+using (
+    exists (
+        select 1
+        from public.albums
+        where albums.id = album_photos.album_id
+        and albums.photographer_id = auth.uid()
+    )
+);
+
+create policy "Client can view assigned album photos"
+on public.album_photos
+for select
+to authenticated
+using (
+    exists (
+        select 1
+        from public.albums
+        where albums.id = album_photos.album_id
+        and albums.client_id = auth.uid()
+    )
+);

@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import GoogleDriveFolderPicker  from "./GoogleDriveFolderPicker";
 
 interface AlbumFormProps {
     mode?: "create" | "edit";
@@ -14,6 +15,9 @@ interface AlbumFormProps {
         whatsapp_number: string | null;
         expires_at: string | null;
         is_active: boolean;
+
+        drive_folder_id: string | null;
+        drive_folder_name: string | null;
     };
 }
 
@@ -23,6 +27,16 @@ export default function AlbumForm({
 }: AlbumFormProps) {
     const supabase = createClient();
     const router = useRouter();
+
+    const [driveFolderId, setDriveFolderId] =
+    useState(
+        album?.drive_folder_id ?? ""
+    );
+
+    const [driveFolderName, setDriveFolderName] =
+    useState(
+        album?.drive_folder_name ?? ""
+    );
 
     const [title, setTitle] = useState(
         album?.title ?? ""
@@ -108,6 +122,11 @@ export default function AlbumForm({
                     expires_at:
                         expiresAt || null,
                     is_active: isActive,
+                    drive_folder_id:
+                        driveFolderId || null,
+
+                    drive_folder_name:
+                        driveFolderName || null,
                 });
 
             if (error) {
@@ -128,6 +147,11 @@ export default function AlbumForm({
                     expires_at:
                         expiresAt || null,
                     is_active: isActive,
+                    drive_folder_id:
+                        driveFolderId || null,
+
+                    drive_folder_name:
+                        driveFolderName || null,
                 })
                 .eq("id", album!.id);
 
@@ -232,6 +256,9 @@ export default function AlbumForm({
                     className="w-full rounded-lg border p-3"
                 />
             </div>
+
+            <GoogleDriveFolderPicker value={driveFolderId} onChange={(folder) => {setDriveFolderId(folder?.id ?? "" );
+        setDriveFolderName(folder?.name ?? "" );}}/>
 
             <label className="flex items-center gap-3">
                 <input

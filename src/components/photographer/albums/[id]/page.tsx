@@ -4,6 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AlbumStatusBadge from "@/components/photographer/AlbumStatusBadge";
 
+import SyncDriveButton
+    from "@/components/photographer/SyncDriveButton";
+
 interface Props {
     params: Promise<{
         id: string;
@@ -35,6 +38,18 @@ export default async function AlbumDetailPage({
     if (!album) {
         notFound();
     }
+
+    const { count: photoCount } =
+    await supabase
+        .from("album_photos")
+        .select("*", {
+            count: "exact",
+            head: true,
+        })
+        .eq(
+            "album_id",
+            album.id
+        );
 
     const albumUrl =
         `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/album/${album.slug}`;
@@ -132,6 +147,53 @@ export default async function AlbumDetailPage({
                                         : "No"}
                                 </p>
                             </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section className="rounded-xl border bg-white p-6">
+
+                        <h2 className="mb-5 text-lg font-semibold">
+                            Google Drive
+                        </h2>
+
+                        <div className="space-y-4">
+
+                            <div>
+                                <p className="text-sm text-gray-500">
+                                    Folder
+                                </p>
+
+                                <p className="font-medium">
+                                    {album.drive_folder_name || "-"}
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                    Photos
+                                </p>
+
+                                <p className="font-medium">{photoCount ?? 0} foto</p>
+                            </div>
+
+                            <div>
+                                <p className="text-sm text-gray-500">
+                                    Last Sync
+                                </p>
+
+                                <p className="font-medium">
+                                    {album.photos_synced_at
+                                        ? new Date(
+                                            album.photos_synced_at
+                                        ).toLocaleString("id-ID")
+                                        : "Belum pernah sync"}
+                                </p>
+                            </div>
+
+                            <SyncDriveButton
+                                albumId={album.id}
+                            />
 
                         </div>
 
