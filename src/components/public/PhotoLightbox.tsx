@@ -21,6 +21,10 @@ interface Props {
 
     quota: number;
 
+    selectionStatus:
+        | "draft"
+        | "submitted";
+
     onClose: () => void;
 
     onChange: (
@@ -37,6 +41,7 @@ export default function PhotoLightbox({
     activeIndex,
     selectedIds,
     quota,
+    selectionStatus,
     onClose,
     onChange,
     onToggle,
@@ -242,7 +247,7 @@ export default function PhotoLightbox({
 
                 <div className="absolute bottom-6 left-1/2 z-20 -translate-x-1/2">
 
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() =>
                             onToggle(
@@ -261,6 +266,34 @@ export default function PhotoLightbox({
                         } disabled:cursor-not-allowed disabled:opacity-50`}
                     >
                         {isSelected
+                            ? "✓ Foto Dipilih"
+                            : "Pilih Foto"}
+                    </button> */}
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            onToggle(photo.id)
+                        }
+                        disabled={
+                            selectionStatus ===
+                                "submitted" ||
+                            (!isSelected &&
+                                selectedIds.size >=
+                                    quota)
+                        }
+                        className={`rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition ${
+                            isSelected
+                                ? "bg-white text-black"
+                                : "bg-black/60 text-white ring-1 ring-white/30"
+                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                        {selectionStatus ===
+                        "submitted"
+                            ? isSelected
+                                ? "✓ Foto Dipilih"
+                                : "Pilihan Sudah Dikirim"
+                            : isSelected
                             ? "✓ Foto Dipilih"
                             : "Pilih Foto"}
                     </button>

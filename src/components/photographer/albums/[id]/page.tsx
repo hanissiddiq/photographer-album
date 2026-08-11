@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import AlbumStatusBadge from "@/components/photographer/AlbumStatusBadge";
-import GeneratePublicLinkButton
-    from "@/components/photographer/GeneratePublicLinkButton";
 
-import SyncDriveButton
-    from "@/components/photographer/SyncDriveButton";
+import AlbumStatusBadge from "@/components/photographer/AlbumStatusBadge";
+
+import GeneratePublicLinkButton from "@/components/photographer/GeneratePublicLinkButton";
+
+import SyncDriveButton from "@/components/photographer/SyncDriveButton";
+
+import AlbumSelectionList from "@/components/photographer/albums/AlbumSelectionList";
+
+import { getAlbumSelection } from "@/lib/photographer/album-selection";
 
 interface Props {
     params: Promise<{
@@ -20,7 +24,19 @@ export default async function AlbumDetailPage({
 }: Props) {
     const { id } = await params;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Supabase
+    |--------------------------------------------------------------------------
+    */
+
     const supabase = await createClient();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Auth
+    |--------------------------------------------------------------------------
+    */
 
     const {
         data: { user },
@@ -29,6 +45,12 @@ export default async function AlbumDetailPage({
     if (!user) {
         redirect("/login");
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Album
+    |--------------------------------------------------------------------------
+    */
 
     const { data: album } = await supabase
         .from("albums")
@@ -41,29 +63,58 @@ export default async function AlbumDetailPage({
         notFound();
     }
 
-    const { count: photoCount } =
-    await supabase
+    /*
+    |--------------------------------------------------------------------------
+    | Photo Count
+    |--------------------------------------------------------------------------
+    */
+
+    const { count: photoCount } = await supabase
         .from("album_photos")
         .select("*", {
             count: "exact",
             head: true,
         })
-        .eq(
-            "album_id",
-            album.id
-        );
+        .eq("album_id", album.id);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Client Selection
+    |--------------------------------------------------------------------------
+    */
+
+    const selectionData = await getAlbumSelection(
+        album.id
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public Album URL
+    |--------------------------------------------------------------------------
+    */
 
     const albumUrl =
         `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/album/${album.slug}`;
 
+    /*
+    |--------------------------------------------------------------------------
+    | Render
+    |--------------------------------------------------------------------------
+    */
+
     return (
         <main className="min-h-screen bg-gray-50 p-8">
 
-            <div className="mx-auto max-w-4xl">
+            <div className="mx-auto max-w-5xl">
 
-                <div className="mb-8 flex items-center justify-between">
+                {/* =========================================================
+                    HEADER
+                ========================================================== */}
+
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
                     <div>
+
                         <h1 className="text-3xl font-bold">
                             {album.title}
                         </h1>
@@ -71,18 +122,24 @@ export default async function AlbumDetailPage({
                         <p className="mt-2 text-gray-500">
                             Album Detail
                         </p>
+
                     </div>
 
                     <Link
                         href={`/photographer/albums/${album.id}/edit`}
-                        className="rounded-lg border bg-white px-4 py-2 text-sm"
+                        className="w-fit rounded-lg border bg-white px-4 py-2 text-sm font-medium hover:bg-gray-50"
                     >
                         Edit
                     </Link>
 
                 </div>
 
+
                 <div className="space-y-6">
+
+                    {/* =====================================================
+                        STATUS
+                    ====================================================== */}
 
                     <section className="rounded-xl border bg-white p-6">
 
@@ -100,6 +157,11 @@ export default async function AlbumDetailPage({
 
                     </section>
 
+
+                    {/* =====================================================
+                        ALBUM INFORMATION
+                    ====================================================== */}
+
                     <section className="rounded-xl border bg-white p-6">
 
                         <h2 className="mb-5 text-lg font-semibold">
@@ -108,7 +170,10 @@ export default async function AlbumDetailPage({
 
                         <div className="grid gap-5 md:grid-cols-2">
 
+                            {/* Album */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     Album
                                 </p>
@@ -116,9 +181,14 @@ export default async function AlbumDetailPage({
                                 <p className="font-medium">
                                     {album.title}
                                 </p>
+
                             </div>
 
+
+                            {/* Quota */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     Quota
                                 </p>
@@ -126,19 +196,30 @@ export default async function AlbumDetailPage({
                                 <p className="font-medium">
                                     {album.quota} foto
                                 </p>
+
                             </div>
 
+
+                            {/* WhatsApp */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     WhatsApp
                                 </p>
 
                                 <p className="font-medium">
-                                    {album.whatsapp_number || "-"}
+                                    {album.whatsapp_number ||
+                                        "-"}
                                 </p>
+
                             </div>
 
+
+                            {/* Active */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     Active
                                 </p>
@@ -148,12 +229,62 @@ export default async function AlbumDetailPage({
                                         ? "Yes"
                                         : "No"}
                                 </p>
+
                             </div>
 
                         </div>
 
                     </section>
 
+
+                    {/* =====================================================
+                        CLIENT SELECTION
+                    ====================================================== */}
+
+                    <section>
+
+                        <AlbumSelectionList
+                            albumId={
+                                selectionData.album.id
+                            }
+
+                            albumTitle={
+                                selectionData.album.title
+                            }
+
+                            quota={
+                                selectionData.album.quota
+                            }
+
+                            status={
+                                selectionData.selection
+                                    ?.status ??
+                                "draft"
+                            }
+
+                            selectedCount={
+                                selectionData.selection
+                                    ?.selected_count ??
+                                0
+                            }
+
+                            submittedAt={
+                                selectionData.selection
+                                    ?.submitted_at ??
+                                null
+                            }
+
+                            photos={
+                                selectionData.photos
+                            }
+                        />
+
+                    </section>
+
+
+                    {/* =====================================================
+                        GOOGLE DRIVE
+                    ====================================================== */}
 
                     <section className="rounded-xl border bg-white p-6">
 
@@ -163,23 +294,41 @@ export default async function AlbumDetailPage({
 
                         <div className="space-y-4">
 
+                            {/* Folder */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     Folder
                                 </p>
 
                                 <p className="font-medium">
-                                    {album.drive_folder_name || "-"}
+                                    {album.drive_folder_name ||
+                                        "-"}
                                 </p>
+
+                            </div>
+
+
+                            {/* Photos */}
+
+                            <div>
 
                                 <p className="text-sm text-gray-500">
                                     Photos
                                 </p>
 
-                                <p className="font-medium">{photoCount ?? 0} foto</p>
+                                <p className="font-medium">
+                                    {photoCount ?? 0} foto
+                                </p>
+
                             </div>
 
+
+                            {/* Last Sync */}
+
                             <div>
+
                                 <p className="text-sm text-gray-500">
                                     Last Sync
                                 </p>
@@ -187,19 +336,32 @@ export default async function AlbumDetailPage({
                                 <p className="font-medium">
                                     {album.photos_synced_at
                                         ? new Date(
-                                            album.photos_synced_at
-                                        ).toLocaleString("id-ID")
+                                              album.photos_synced_at
+                                          ).toLocaleString(
+                                              "id-ID"
+                                          )
                                         : "Belum pernah sync"}
                                 </p>
+
                             </div>
 
+
+                            {/* Sync */}
+
                             <SyncDriveButton
-                                albumId={album.id}
+                                albumId={
+                                    album.id
+                                }
                             />
 
                         </div>
 
                     </section>
+
+
+                    {/* =====================================================
+                        CLIENT ALBUM LINK
+                    ====================================================== */}
 
                     <section className="rounded-xl border bg-white p-6">
 
@@ -220,7 +382,7 @@ export default async function AlbumDetailPage({
                             <Link
                                 href={`/album/${album.slug}`}
                                 target="_blank"
-                                className="rounded-lg bg-black px-4 py-2 text-sm text-white"
+                                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
                             >
                                 Open Album
                             </Link>
@@ -228,6 +390,11 @@ export default async function AlbumDetailPage({
                         </div>
 
                     </section>
+
+
+                    {/* =====================================================
+                        PUBLIC ALBUM
+                    ====================================================== */}
 
                     <section className="rounded-xl border bg-white p-6">
 
@@ -241,7 +408,9 @@ export default async function AlbumDetailPage({
                         </p>
 
                         <GeneratePublicLinkButton
-                            albumId={album.id}
+                            albumId={
+                                album.id
+                            }
                         />
 
                     </section>

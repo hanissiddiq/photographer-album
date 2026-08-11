@@ -37,6 +37,9 @@ create table public.profiles (
     updated_at timestamptz not null default now()
 );
 
+alter table public.profiles
+add column if not exists whatsapp_number text;
+
 
 -- =========================================================
 -- 3. INDEX
@@ -519,3 +522,161 @@ enable row level security;
 
 alter table public.album_selected_photos
 enable row level security;
+
+-- ===================================
+-- RPC Submit Album Selection
+-- ===================================
+
+create or replace function public.submit_album_selection(
+    p_selection_id uuid,
+    p_album_id uuid,
+    p_access_token_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_selection public.album_selections%rowtype;
+    v_album public.albums%rowtype;
+    v_selected_count integer;
+begin
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Lock selection
+    |--------------------------------------------------------------------------
+    */
+
+    select *
+    into v_selection
+    from public.album_selections
+    where id = p_selection_id
+      and album_id = p_album_id
+      and access_token_id = p_access_token_id
+    for update;
+
+    if not found then
+        raise exception 'Selection tidak ditemukan.';
+    end if;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Selection harus masih draft
+    |--------------------------------------------------------------------------
+    */
+
+    if v_selection.status <> 'draft' then
+
+        raise exception
+            'Selection sudah dikirim dan tidak dapat diubah.';
+
+    end if;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Ambil album
+    |--------------------------------------------------------------------------
+    */
+
+    select *
+    into v_album
+    from public.albums
+    where id = p_album_id
+      and is_active = true;
+
+    if not found then
+        raise exception 'Album tidak aktif atau tidak ditemukan.';
+    end if;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Check album expiration
+    |--------------------------------------------------------------------------
+    */
+
+    if v_album.expires_at is not null
+       and v_album.expires_at < now() then
+
+        raise exception 'Album sudah kedaluwarsa.';
+
+    end if;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Hitung foto yang dipilih
+    |--------------------------------------------------------------------------
+    */
+
+    select count(*)
+    into v_selected_count
+    from public.album_selected_photos
+    where selection_id = v_selection.id;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Update count agar selalu sinkron
+    |--------------------------------------------------------------------------
+    */
+
+    update public.album_selections
+    set
+        selected_count = v_selected_count,
+        updated_at = now()
+    where id = v_selection.id;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. HARUS tepat sama dengan quota
+    |--------------------------------------------------------------------------
+    */
+
+    if v_selected_count <> v_album.quota then
+
+        raise exception
+            'Jumlah foto yang dipilih harus tepat % foto. Saat ini % foto.',
+            v_album.quota,
+            v_selected_count;
+
+    end if;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Final submit
+    |--------------------------------------------------------------------------
+    */
+
+    update public.album_selections
+    set
+        status = 'submitted',
+        submitted_at = now(),
+        selected_count = v_selected_count,
+        updated_at = now()
+    where id = v_selection.id;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Return result
+    |--------------------------------------------------------------------------
+    */
+
+    return jsonb_build_object(
+        'success', true,
+        'selection_id', v_selection.id,
+        'album_id', v_album.id,
+        'selected_count', v_selected_count,
+        'quota', v_album.quota,
+        'status', 'submitted'
+    );
+
+end;
+$$;

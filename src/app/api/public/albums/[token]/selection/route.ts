@@ -547,6 +547,94 @@ export async function GET(
 
         const admin =
             createAdminClient();
+        
+        // informasi data photografer
+        // const {
+        //     data: photographer,
+        //     error: photographerError,
+        // } =
+        //     await admin
+        //         .from("profiles")
+        //         .select(`
+        //             id,
+        //             full_name,
+        //             whatsapp_number
+        //         `)
+        //         .eq(
+        //             "id",
+        //             album.photographer_id
+        //         )
+        //         .single();
+
+        // if (
+        //     photographerError ||
+        //     !photographer
+        // ) {
+        //     throw new Error(
+        //         "Data fotografer tidak ditemukan."
+        //     );
+        // }
+
+
+
+         /*
+        |--------------------------------------------------------------------------
+        | Add Whatsapp link
+        |--------------------------------------------------------------------------
+        */
+       
+        // const whatsappNumber =
+        //     photographer.whatsapp_number
+        //         ?.replace(
+        //             /\D/g,
+        //             ""
+        //         );
+
+        // let whatsappUrl:
+        //     string | null = null;
+
+        // if (whatsappNumber) {
+
+        //     const message = [
+        //         `Halo ${photographer.full_name ?? ""},`,
+        //         "",
+        //         `Saya mengirimkan pilihan foto untuk album:`,
+        //         `${album.title}`,
+        //         "",
+        //         `Jumlah foto: ${fileNames.length}/${album.quota}`,
+        //         "",
+        //         "Daftar foto:",
+        //         "",
+        //         ...fileNames.map(
+        //             (
+        //                 fileName,
+        //                 index
+        //             ) =>
+        //                 `${index + 1}. ${fileName}`
+        //         ),
+        //         "",
+        //         "Terima kasih.",
+        //     ].join("\n");
+
+        //     whatsappUrl =
+        //         `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        //             message
+        //         )}`;
+        // }
+        // return NextResponse.json({
+        //     success: true,
+
+        //     message:
+        //         "Pilihan foto berhasil dikirim.",
+
+        //     selection: result,
+
+        //     whatsapp_url:
+        //         whatsappUrl,
+        // });
+
+
+
 
         /*
         |--------------------------------------------------------------------------

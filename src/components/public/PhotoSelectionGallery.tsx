@@ -58,6 +58,30 @@ export default function PhotoSelectionGallery({
         setError,
     ] = useState("");
 
+    const [
+        selectionStatus,
+        setSelectionStatus,
+    ] = useState<
+        "draft" | "submitted"
+    >("draft");
+
+    const [
+        submitting,
+        setSubmitting,
+    ] = useState(false);
+
+    const [
+        submitSuccess,
+        setSubmitSuccess,
+    ] = useState(false);
+
+    const [
+    whatsappUrl,
+    setWhatsappUrl,
+] = useState<string | null>(
+    null
+);
+
     /*
     |--------------------------------------------------------------------------
     | Load existing selection
@@ -91,6 +115,10 @@ export default function PhotoSelectionGallery({
                     )
                 );
 
+                setSelectionStatus(
+                    data.selection.status
+                );
+
             } catch (error) {
                 setError(
                     error instanceof Error
@@ -112,6 +140,13 @@ export default function PhotoSelectionGallery({
     function togglePhoto(
         photoId: string
     ) {
+        if (
+        selectionStatus !==
+        "draft"
+    ) {
+        return;
+    }
+
         setSelectedIds(
             (previous) => {
                 const next =
@@ -211,6 +246,124 @@ export default function PhotoSelectionGallery({
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Submit selection
+    |--------------------------------------------------------------------------
+    */
+
+    async function submitSelection() {
+    if (
+        selectedIds.size !== quota
+    ) {
+        setError(
+            `Anda harus memilih tepat ${quota} foto. Saat ini ${selectedIds.size} foto.`
+        );
+
+        return;
+    }
+
+    const confirmed =
+        window.confirm(
+            `Anda sudah memilih ${selectedIds.size} foto. Setelah dikirim, pilihan tidak dapat diubah lagi. Lanjutkan?`
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+        /*
+        |--------------------------------------------------------------------------
+        | Make sure latest selection is saved
+        |--------------------------------------------------------------------------
+        */
+
+        if (!saved) {
+            const saveResponse =
+                await fetch(
+                    `/api/public/albums/${token}/selection`,
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            photoIds:
+                                Array.from(
+                                    selectedIds
+                                ),
+                        }),
+                    }
+                );
+
+            const saveData =
+                await saveResponse.json();
+
+            if (
+                !saveResponse.ok
+            ) {
+                throw new Error(
+                    saveData.error ??
+                        "Gagal menyimpan pilihan."
+                );
+            }
+
+            setSaved(true);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final submit
+        |--------------------------------------------------------------------------
+        */
+
+        const response =
+            await fetch(
+                `/api/public/albums/${token}/selection/submit`,
+                {
+                    method: "POST",
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ??
+                    "Gagal mengirim pilihan."
+            );
+        }
+
+        setSelectionStatus(
+            "submitted"
+        );
+
+        setSubmitSuccess(true);
+
+        setWhatsappUrl(
+            data.whatsapp_url ??
+                null
+        );
+
+    } catch (error) {
+        setError(
+            error instanceof Error
+                ? error.message
+                : "Gagal mengirim pilihan."
+        );
+    } finally {
+        setSubmitting(false);
+    }
+}
+
     return (
         <div>
 
@@ -239,7 +392,7 @@ export default function PhotoSelectionGallery({
 
                     </div>
 
-                    <button
+                    {/* <button
                         type="button"
                         onClick={
                             saveSelection
@@ -255,7 +408,58 @@ export default function PhotoSelectionGallery({
                             : saved
                             ? "Tersimpan"
                             : "Simpan Pilihan"}
-                    </button>
+                    </button> */}
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+
+                        {selectionStatus ===
+                            "draft" && (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={
+                                        saveSelection
+                                    }
+                                    disabled={
+                                        saving ||
+                                        saved
+                                    }
+                                    className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    {saving
+                                        ? "Menyimpan..."
+                                        : saved
+                                        ? "✓ Tersimpan"
+                                        : "Simpan Pilihan"}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        submitSelection
+                                    }
+                                    disabled={
+                                        submitting ||
+                                        selectedIds.size !==
+                                            quota
+                                    }
+                                    className="rounded-lg bg-black px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                    {submitting
+                                        ? "Mengirim..."
+                                        : "Kirim Pilihan"}
+                                </button>
+                            </>
+                        )}
+
+                        {selectionStatus ===
+                            "submitted" && (
+                            <div className="rounded-lg bg-green-50 px-5 py-3 text-sm font-semibold text-green-700">
+                                ✓ Pilihan Sudah Dikirim
+                            </div>
+                        )}
+
+                    </div>
 
                 </div>
 
@@ -274,6 +478,52 @@ export default function PhotoSelectionGallery({
                 )}
 
             </div>
+            {/* Status Final */}
+                {selectionStatus ===
+                    "submitted" && (
+                    <div className="mt-4 rounded-xl border border-green-200 mb-4 bg-green-50 p-4">
+
+                        <div className="flex items-start gap-3">
+
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-600 text-sm font-bold text-white">
+                                ✓
+                            </div>
+
+                            <div>
+
+                                <p className="font-semibold text-green-900">
+                                    Foto sudah dipilih
+                                    sesuai kuota
+                                </p>
+
+                                <p className="mt-1 text-sm text-green-700">
+                                    Anda telah memilih{" "}
+                                    {selectedIds.size}{" "}
+                                    foto. Pilihan sudah
+                                    dikirim kepada
+                                    fotografer.
+                                </p>
+
+                            </div>
+
+                            {whatsappUrl && (
+                                    <a
+                                        href={
+                                            whatsappUrl
+                                        }
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700"
+                                    >
+                                        Kirim ke WhatsApp
+                                    </a>
+                                )}
+
+
+                        </div>
+
+                    </div>
+                )}
 
             {/* Gallery */}
 
@@ -358,6 +608,9 @@ export default function PhotoSelectionGallery({
                         selectedIds
                     }
                     quota={quota}
+                    selectionStatus={
+                        selectionStatus
+                    }
                     onClose={() =>
                         setLightboxIndex(
                             null
