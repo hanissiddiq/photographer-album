@@ -7,6 +7,7 @@ import {
 
 import PhotoLightbox from "./PhotoLightbox";
 import SendWhatsAppButton   from "./SendWhatsAppButton";
+import SelectionProgress from "@/components/public/SelectionProgress";
 
 interface Photo {
     id: string;
@@ -372,6 +373,11 @@ export default function PhotoSelectionGallery({
 
             <div className="sticky top-0 z-30 mb-6 rounded-xl border bg-white/95 p-4 shadow-sm backdrop-blur">
 
+                    <div className="mb-4">
+                        <SelectionProgress
+                            status={selectionStatus}
+                        />
+                    </div>
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 
                     <div>
@@ -392,6 +398,8 @@ export default function PhotoSelectionGallery({
                         </p>
 
                     </div>
+
+                    
 
                     {/* <button
                         type="button"

@@ -631,6 +631,12 @@ begin
         updated_at = now()
     where id = v_selection.id;
 
+    update public.albums
+    set
+        status = 'submitted',
+        updated_at = now()
+    where id = v_album.id;
+
 
     /*
     |--------------------------------------------------------------------------

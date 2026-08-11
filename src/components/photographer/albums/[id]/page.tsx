@@ -13,6 +13,10 @@ import AlbumSelectionList from "@/components/photographer/albums/AlbumSelectionL
 
 import { getAlbumSelection } from "@/lib/photographer/album-selection";
 
+import SelectionPanel  from "@/components/photographer/albums/[id]/SelectionPanel";
+
+import AlbumWorkflow  from "@/components/photographer/albums/AlbumWorkflow";
+
 interface Props {
     params: Promise<{
         id: string;
@@ -96,6 +100,43 @@ export default async function AlbumDetailPage({
     const albumUrl =
         `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/album/${album.slug}`;
 
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Album_Selection ambil status terakhir
+        |--------------------------------------------------------------------------
+               
+        */
+       const {
+            data: selection,
+            error: selectionError,
+        } = await supabase
+            .from("album_selections")
+            .select(`
+                id,
+                album_id,
+                selected_count,
+                status,
+                submitted_at,
+                updated_at
+            `)
+            .eq(
+                "album_id",
+                album.id
+            )
+            .order(
+                "submitted_at",
+                {
+                    ascending: false,
+                }
+            )
+            .limit(1)
+            .maybeSingle();
+
+            if (selectionError) {
+                throw selectionError;
+            }
     /*
     |--------------------------------------------------------------------------
     | Render
@@ -280,6 +321,27 @@ export default async function AlbumDetailPage({
                         />
 
                     </section>
+
+                    {/* =====================================
+                    Album Workflow & Selection panel
+                    ===================================== */}
+                    {selection && (
+                        <AlbumWorkflow
+                            albumId={album.id}
+                            initialStatus={
+                                selection.status
+                            }
+                        />
+                    )}
+
+                    {/* <SelectionPanel
+                        photos={
+                            selectedPhotos
+                        }
+                        quota={
+                            album.quota
+                        }
+                    /> */}
 
 
                     {/* =====================================================
