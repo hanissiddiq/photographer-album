@@ -6,6 +6,7 @@ import {
 } from "react";
 
 import PhotoLightbox from "./PhotoLightbox";
+import SendWhatsAppButton   from "./SendWhatsAppButton";
 
 interface Photo {
     id: string;
@@ -505,19 +506,10 @@ export default function PhotoSelectionGallery({
                                 </p>
 
                             </div>
+                            <div className="ml-auto">
 
-                            {whatsappUrl && (
-                                    <a
-                                        href={
-                                            whatsappUrl
-                                        }
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center justify-center rounded-lg bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700"
-                                    >
-                                        Kirim ke WhatsApp
-                                    </a>
-                                )}
+                            {<SendWhatsAppButton  token={token} />}
+                            </div>
 
 
                         </div>

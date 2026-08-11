@@ -209,6 +209,7 @@ export async function getPublicAlbumAccess(
         .from("albums")
         .select(`
             id,
+            photographer_id,
             title,
             description,
             quota,
