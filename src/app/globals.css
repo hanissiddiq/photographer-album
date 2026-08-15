@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ---- Design tokens: "contact sheet" identity ---- */
+  --ink: #14131a;        /* darkroom charcoal - nav & headers */
+  --ink-soft: #201f28;   /* hover surface on ink */
+  --paper: #f6f4ef;      /* page background */
+  --paper-card: #ffffff; /* card surface */
+  --fog: #9b98a5;        /* muted text on ink */
+  --slate: #6b7280;      /* muted text on paper */
+  --proof: #e1a542;      /* accent - grease-pencil amber, marks selections */
+  --proof-strong: #c98a2b;
+  --signal: #4e9f6e;     /* success / "dipilih" state */
+  --danger: #d64545;
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: #1c1b22;
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Respect reduced-motion preferences globally */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
