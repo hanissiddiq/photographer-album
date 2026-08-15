@@ -78,10 +78,22 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">📸</span>
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-              LensVault
-            </span>
+            {/* <span className="text-2xl">📸</span>
+            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-yellow-600 to-orange-300 bg-clip-text text-transparent">
+              Pilihin
+            </span> */}
+            {/* Brand */}
+                    <Link
+                         href={process.env.NEXT_PUBLIC_SITE_URL || '/'}
+                        className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--proof)]"
+                    >
+                      <FrameMark />                        
+
+                        <span className="font-display text-lg font-bold tracking-tight text-[var(--proof)]">
+                            pilihin
+                            <span className="text-[var(--proof)]">.</span>
+                        </span>
+                    </Link>
           </div>
           
           <nav className="flex items-center gap-4">
@@ -93,7 +105,7 @@ export default function LandingPage() {
             </Link>
             <Link 
               href="/register" 
-              className="text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors shadow-sm"
+              className="text-sm font-medium text-white bg-[var(--proof)] hover:bg-[var(--proof-strong)] px-4 py-2 rounded-lg transition-colors shadow-sm"
             >
               Daftar
             </Link>
@@ -105,7 +117,7 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 mb-6 max-w-3xl mx-auto leading-tight">
-            Galeri Foto Eksklusif Anda, <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Amankan Kenangan</span> Terbaik
+            Galeri Foto Eksklusif Anda, <span className="bg-gradient-to-r from-yellow-500 to-orange-300 bg-clip-text text-transparent">Amankan Kenangan</span> Terbaik
           </h1>
           <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
             Platform khusus klien untuk melihat, mengunduh, dan membagikan hasil foto berkualitas tinggi dari sesi fotografi Anda dengan aman dan mudah.
@@ -113,7 +125,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link 
               href="/register" 
-              className="w-full sm:w-auto text-center font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-200"
+              className="w-full sm:w-auto text-center font-semibold text-white bg-[var(--proof)] hover:bg-[var(--proof-strong)] px-8 py-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-200"
             >
               Mulai Akses Album
             </Link>
@@ -169,4 +181,54 @@ export default function LandingPage() {
       </footer>
     </div>
   );
+
+}
+
+function FrameMark() {
+    return (
+        <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+            className="shrink-0"
+        >
+            <path
+                d="M3 8V4.5A1.5 1.5 0 0 1 4.5 3H8"
+                stroke="var(--proof)"
+                strokeWidth="2"
+                strokeLinecap="round"
+            />
+
+            <path
+                d="M16 3h3.5A1.5 1.5 0 0 1 21 4.5V8"
+                stroke="var(--proof)"
+                strokeWidth="2"
+                strokeLinecap="round"
+            />
+
+            <path
+                d="M21 16v3.5a1.5 1.5 0 0 1-1.5 1.5H16"
+                stroke="var(--proof)"
+                strokeWidth="2"
+                strokeLinecap="round"
+            />
+
+            <path
+                d="M8 21H4.5A1.5 1.5 0 0 1 3 19.5V16"
+                stroke="var(--proof)"
+                strokeWidth="2"
+                strokeLinecap="round"
+            />
+
+            <circle
+                cx="12"
+                cy="12"
+                r="3.1"
+                stroke="var(--proof)"
+                strokeWidth="1.6"
+            />
+        </svg>
+    );
 }
